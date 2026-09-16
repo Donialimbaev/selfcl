@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Мои Темы</title>
+    <!-- Подключаем библиотеку EmailJS -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script type="text/javascript">
+        // Инициализация EmailJS вашим публичным ключом
+        (function() {
+            emailjs.init("qYLyJ2GJrlR2LVAYb"); 
+        })();
+    </script>
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 40px auto; padding: 0 20px; background: #121212; color: #e0e0e0; }
+        textarea { width: 100%; height: 100px; background: #1e1e1e; color: #fff; border: 1px solid #333; padding: 10px; border-radius: 6px; resize: vertical; box-sizing: border-box; }
+        button { background: #fff; color: #000; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 8px; }
+        .post { background: #1e1e1e; border: 1px solid #333; padding: 15px; border-radius: 8px; margin-top: 15px; position: relative; }
+        .post p { white-space: pre-wrap; word-break: break-word; margin: 0 0 10px 0; }
+        .actions { font-size: 0.85rem; color: #888; display: flex; gap: 15px; }
+        .actions span { cursor: pointer; }
+        .actions span:hover { color: #fff; }
+        .char-count { font-size: 0.8rem; color: #888; text-align: right; margin-top: 4px; }
+    </style>
+</head>
+<body>
+
+    <h2>Мои Темы</h2>
+    
+    <div>
+        <textarea id="postInput" placeholder="Что нового? (максимум 200 слов)" oninput="checkWordCount()"></textarea>
+        <div class="char-count" id="wordCount">0 / 200 слов</div>
+        <button onclick="saveAndSendPost()">Опубликовать</button>
+    </div>
+
+    <hr style="border-color: #333; margin: 30px 0;">
+
+    <div id="postsContainer"></div>
+
+    <script>
+        let posts = JSON.parse(localStorage.getItem('static_threads') || '[]');
+
+        function checkWordCount() {
+            const text = document.getElementById('postInput').value.trim();
+            const words = text ? text.split(/\s+/) : [];
+            const count = words.length;
+            const counterEl = document.getElementById('wordCount');
+            
+            counterEl.innerText = `${count} / 200 слов`;
+            if (count > 200) {
+                counterEl.style.color = '#ff5555';
+            } else {
+                counterEl.style.color = '#888';
+            }
+        }
+
+        function saveAndSendPost() {
+            const textInput = document.getElementById('postInput');
+            const text = textInput.value.trim();
+            if (!text) return;
+
+            const words = text.split(/\s+/);
+            if (words.length > 200) {
+                alert("Превышен лимит в 200 слов.");
+                return;
+            }
+
+            // 1. Сохраняем локально для отображения на сайте
+            const newPost = {
+                id: Date.now(),
+                text: text,
+                date: new Date().toLocaleString()
+            };
+            posts.unshift(newPost);
+            syncStorage();
+            renderPosts();
+
+            // 2. Отправляем на почту через ваш сервис
+            const templateParams = {
+                message: text,
+                time: newPost.date,
+                name: "Daniyar",
+                title: text.slice(0, 30) + (text.length > 30 ? '...' : '')
+            };
+
+            // Замените 'YOUR_TEMPLATE_ID' на ID вашего шаблона из EmailJS
+            emailjs.send('service_nm4zntb', 'YOUR_TEMPLATE_ID', templateParams)
+                .then(function(response) {
+                   console.log('Письмо успешно отправлено!', response.status);
+                }, function(error) {
+                   console.error('Ошибка отправки email:', error);
+                   alert('Пост сохранен на сайте, но не удалось отправить email.');
+                });
+
+            textInput.value = '';
+            checkWordCount();
+        }
+
+        function renderPosts() {
+            const container = document.getElementById('postsContainer');
+            if (posts.length === 0) {
+                container.innerHTML = '<p style="color: #666;">Пока нет записей.</p>';
+                return;
+            }
+
+            container.innerHTML = posts.map(post => `
+                <div class="post">
+                    <p>${escapeHTML(post.text)}</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 0.75rem; color: #666;">${post.date}</span>
+                        <div class="actions">
+                            <span onclick="deletePost(${post.id})" style="color: #ff5555;">Удалить</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function deletePost(id) {
+            if (confirm("Вы уверены, что хотите удалить эту запись?")) {
+                posts = posts.filter(p => p.id !== id);
+                syncStorage();
+                renderPosts();
+            }
+        }
+
+        function syncStorage() {
+            localStorage.setItem('static_threads', JSON.stringify(posts));
+        }
+
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, 
+                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+            );
+        }
+
+        renderPosts();
+    </script>
+</body>
+</html>
