@@ -2,6 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Мои Темы</title>
     <!-- Подключаем библиотеку EmailJS -->
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
@@ -12,28 +13,83 @@
         })();
     </script>
     <style>
-        body { font-family: sans-serif; max-width: 600px; margin: 40px auto; padding: 0 20px; background: #121212; color: #e0e0e0; }
-        textarea { width: 100%; height: 100px; background: #1e1e1e; color: #fff; border: 1px solid #333; padding: 10px; border-radius: 6px; resize: vertical; box-sizing: border-box; }
-        button { background: #fff; color: #000; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 8px; }
-        .post { background: #1e1e1e; border: 1px solid #333; padding: 15px; border-radius: 8px; margin-top: 15px; position: relative; }
-        .post p { white-space: pre-wrap; word-break: break-word; margin: 0 0 10px 0; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            max-width: 600px; 
+            margin: 0 auto; 
+            padding: 16px; 
+            background: #121212; 
+            color: #e0e0e0; 
+            box-sizing: border-box;
+        }
+        h2 { font-size: 1.5rem; margin-top: 10px; }
+        .input-container {
+            background: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 12px;
+        }
+        textarea { 
+            width: 100%; 
+            height: 120px; 
+            background: transparent; 
+            color: #fff; 
+            border: none; 
+            outline: none;
+            padding: 0; 
+            font-size: 1rem;
+            resize: vertical; 
+            box-sizing: border-box; 
+        }
+        button { 
+            background: #fff; 
+            color: #000; 
+            border: none; 
+            padding: 10px 20px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            font-size: 1rem;
+            margin-top: 10px; 
+            width: 100%;
+        }
+        @media (min-width: 480px) {
+            button { width: auto; float: right; }
+            .input-container::after { content: ""; display: table; clear: both; }
+        }
+        .post { 
+            background: #1e1e1e; 
+            border: 1px solid #333; 
+            padding: 15px; 
+            border-radius: 8px; 
+            margin-top: 15px; 
+            word-break: break-word; 
+        }
+        .post p { white-space: pre-wrap; margin: 0 0 10px 0; font-size: 0.95rem; line-height: 1.4; }
+        .post-footer {
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
         .actions { font-size: 0.85rem; color: #888; display: flex; gap: 15px; }
-        .actions span { cursor: pointer; }
+        .actions span { cursor: pointer; padding: 4px 0; }
         .actions span:hover { color: #fff; }
-        .char-count { font-size: 0.8rem; color: #888; text-align: right; margin-top: 4px; }
+        .char-count { font-size: 0.8rem; color: #888; text-align: right; margin-top: 6px; }
     </style>
 </head>
 <body>
 
     <h2>Мои Темы</h2>
     
-    <div>
+    <div class="input-container">
         <textarea id="postInput" placeholder="Что нового? (максимум 200 слов)" oninput="checkWordCount()"></textarea>
         <div class="char-count" id="wordCount">0 / 200 слов</div>
         <button onclick="saveAndSendPost()">Опубликовать</button>
     </div>
 
-    <hr style="border-color: #333; margin: 30px 0;">
+    <hr style="border-color: #333; margin: 25px 0; border-width: 0.5px;">
 
     <div id="postsContainer"></div>
 
@@ -65,7 +121,7 @@
                 return;
             }
 
-            // 1. Сохраняем локально для отображения на сайте
+            // 1. Сохраняем локально для ленты на сайте
             const newPost = {
                 id: Date.now(),
                 text: text,
@@ -75,7 +131,7 @@
             syncStorage();
             renderPosts();
 
-            // 2. Отправляем на почту через ваш сервис
+            // 2. Отправляем на почту через EmailJS
             const templateParams = {
                 message: text,
                 time: newPost.date,
@@ -83,8 +139,7 @@
                 title: text.slice(0, 30) + (text.length > 30 ? '...' : '')
             };
 
-            // Замените 'YOUR_TEMPLATE_ID' на ID вашего шаблона из EmailJS
-            emailjs.send('service_nm4zntb', 'YOUR_TEMPLATE_ID', templateParams)
+            emailjs.send('service_nm4zntb', 'template_na0vxq9', templateParams)
                 .then(function(response) {
                    console.log('Письмо успешно отправлено!', response.status);
                 }, function(error) {
@@ -106,7 +161,7 @@
             container.innerHTML = posts.map(post => `
                 <div class="post">
                     <p>${escapeHTML(post.text)}</p>
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div class="post-footer">
                         <span style="font-size: 0.75rem; color: #666;">${post.date}</span>
                         <div class="actions">
                             <span onclick="deletePost(${post.id})" style="color: #ff5555;">Удалить</span>
